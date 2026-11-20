@@ -8,6 +8,8 @@ from app.base62 import encode
 from app.database import Base, engine, get_db
 from app.models import Url
 
+from app.cache import get_cached_url, set_cached_url
+
 app = FastAPI(title="URL Shortener")
 Base.metadata.create_all(bind=engine)
 
@@ -33,7 +35,14 @@ def shorten(body: BodyRequest, db: Session = Depends(get_db)):
 
 @app.get("/{short_code}")
 def redirect(short_code: str, db: Session = Depends(get_db)):
+
+    long_url = get_cached_url(short_code)
+    if long_url is not None:
+        return RedirectResponse(url=long_url, status_code=302, headers={"X-Cache": "HIT"})
+
     long_url = db.scalar(select(Url.long_url).where(Url.short_code == short_code))
     if long_url is None:
         raise HTTPException(status_code=404, detail="Short link not found")
-    return RedirectResponse(url=long_url, status_code=302)
+
+    set_cached_url(short_code, long_url)
+    return RedirectResponse(url=long_url, status_code=302, headers={"X-Cache": "MISS"})

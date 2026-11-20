@@ -6,6 +6,7 @@ services:
       WATCHFILES_FORCE_POLLING: "true"
       REDIS_URL: redis://redis:6379/0
       CACHE_TTL_SECONDS: "3600"
+      CLICK_FLUSH_SECONDS: "10"
     ports:
       - "8000:8000"
     volumes:
@@ -35,6 +36,8 @@ services:
   
   redis:
     image: redis:7
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
